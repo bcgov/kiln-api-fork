@@ -9,7 +9,7 @@ global:
     create: false
     # Automatically mount a ServiceAccount's API credentials?
     automount: true
-  # -- List of servers proxied by the SSO Gateway
+  # -- List of servers proxied by the Kiln API
   servers:
     - domain: "app1.example.com" 
       backend: "app1-backend.example.com"
@@ -26,15 +26,15 @@ global:
     # Vault engine to use
     engine: "nonprod"
 
-# -- Node.js SSO Gateway default configuration
-ssoClient:
+# -- Node.js Kiln API default configuration
+kilnAPI:
 
   enabled: true
 
   replicaCount: 1
 
   image:
-    repository: "ghcr.io/bcgov/sso-gateway-client"
+    repository: "ghcr.io/bcgov/kiln-api-client"
     tag: "latest"
     pullPolicy: IfNotPresent
 
@@ -231,7 +231,7 @@ nginx:
   replicaCount: 1
 
   image:
-    repository: "ghcr.io/bcgov/sso-gateway-proxy"
+    repository: "ghcr.io/bcgov/kiln-api-proxy"
     tag: latest
     pullPolicy: Always
 

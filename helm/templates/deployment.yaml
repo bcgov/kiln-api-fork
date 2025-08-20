@@ -5,8 +5,8 @@ metadata:
   labels:
     {{- include "ssoGateway.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.ssoClient.autoscaling.enabled }}
-  replicas: {{ .Values.ssoClient.replicaCount }}
+  {{- if not .Values.kilnAPI.autoscaling.enabled }}
+  replicas: {{ .Values.kilnAPI.replicaCount }}
   {{- end }}
   revisionHistoryLimit: 1
   selector:
@@ -27,10 +27,10 @@ spec:
         # licenseplate-nonprod or licenseplate-prod are your options
         vault.hashicorp.com/role: {{ .Values.global.vault.role }} 
         # - The value is the path in Vault where the secret is located.
-        vault.hashicorp.com/agent-inject-secret-secrets: {{ .Values.global.licenseplate }}-{{ .Values.global.vault.engine }}/{{ .Values.ssoClient.vault.secret }}
+        vault.hashicorp.com/agent-inject-secret-secrets: {{ .Values.global.licenseplate }}-{{ .Values.global.vault.engine }}/{{ .Values.kilnAPI.vault.secret }}
         # - The template Vault Agent should use for rendering a secret:
         vault.hashicorp.com/agent-inject-template-secrets: |
-          {{`{{- with secret `}}"{{ .Values.global.licenseplate }}-{{ .Values.global.vault.engine }}/{{ .Values.ssoClient.vault.secret }}"{{` }}
+          {{`{{- with secret `}}"{{ .Values.global.licenseplate }}-{{ .Values.global.vault.engine }}/{{ .Values.kilnAPI.vault.secret }}"{{` }}
           {{- range $k, $v := .Data.data }}
           {{ $k }}={{ $v }}{{ end -}}
           {{- end `}} }}
@@ -41,22 +41,22 @@ spec:
           {{`{{- with secret `}}"{{ .Values.global.licenseplate }}-{{ .Values.global.vault.engine }}/{{ .Values.redis.vault.secret }}"{{` }}
           {{ .Data.data.password }}
           {{- end `}} }}
-      {{- with .Values.ssoClient.podAnnotations }}
+      {{- with .Values.kilnAPI.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "ssoGateway.labels" . | nindent 8 }}
-        {{- with .Values.ssoClient.podLabels }}
+        {{- with .Values.kilnAPI.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      {{- with .Values.ssoClient.imagePullSecrets }}
+      {{- with .Values.kilnAPI.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ .Values.global.serviceAccount.name }}
       securityContext:
-        {{- toYaml .Values.ssoClient.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.kilnAPI.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
           command: ["/bin/sh"]
@@ -80,68 +80,68 @@ spec:
 
               exec npm start
           securityContext:
-            {{- toYaml .Values.ssoClient.securityContext | nindent 12 }}
-          image: {{ .Values.ssoClient.image.repository }}:{{ .Values.ssoClient.image.tag }}
-          imagePullPolicy: {{ .Values.ssoClient.image.pullPolicy }} 
+            {{- toYaml .Values.kilnAPI.securityContext | nindent 12 }}
+          image: {{ .Values.kilnAPI.image.repository }}:{{ .Values.kilnAPI.image.tag }}
+          imagePullPolicy: {{ .Values.kilnAPI.image.pullPolicy }} 
           ports: 
             - name: http
-              containerPort: {{ .Values.ssoClient.service.port }}
+              containerPort: {{ .Values.kilnAPI.service.port }}
               protocol: TCP
-          {{- if .Values.ssoClient.probes.liveness.enabled }}
+          {{- if .Values.kilnAPI.probes.liveness.enabled }}
           livenessProbe:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: {{ .Values.ssoClient.probes.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.ssoClient.probes.liveness.periodSeconds }}
-            timeoutSeconds: {{ .Values.ssoClient.probes.liveness.timeoutSeconds }}
-            failureThreshold: {{ .Values.ssoClient.probes.liveness.failureThreshold }}
+            initialDelaySeconds: {{ .Values.kilnAPI.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.kilnAPI.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.kilnAPI.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.kilnAPI.probes.liveness.failureThreshold }}
           {{- end }}
-          {{- if .Values.ssoClient.probes.readiness.enabled }}
+          {{- if .Values.kilnAPI.probes.readiness.enabled }}
           readinessProbe:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: {{ .Values.ssoClient.probes.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.ssoClient.probes.readiness.periodSeconds }}
-            timeoutSeconds: {{ .Values.ssoClient.probes.readiness.timeoutSeconds }}
-            failureThreshold: {{ .Values.ssoClient.probes.readiness.failureThreshold }}
+            initialDelaySeconds: {{ .Values.kilnAPI.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.kilnAPI.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.kilnAPI.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.kilnAPI.probes.readiness.failureThreshold }}
           {{- end }}
           resources:
-            {{- toYaml .Values.ssoClient.resources | nindent 12 }}
+            {{- toYaml .Values.kilnAPI.resources | nindent 12 }}
           env:
-            {{- if .Values.ssoClient.env }} 
-            {{- toYaml .Values.ssoClient.env | trimSuffix "\n" | nindent 12 }}
+            {{- if .Values.kilnAPI.env }} 
+            {{- toYaml .Values.kilnAPI.env | trimSuffix "\n" | nindent 12 }}
             {{- end }}
             - name: SSO_CLIENT_PORT
-              value: {{  .Values.ssoClient.service.port | quote }}
+              value: {{  .Values.kilnAPI.service.port | quote }}
             - name: NGINX_PROXY_URL
               value: http://{{ include "ssoGateway.fullname" . }}-nginx-svc
             - name: REDIS_STORE_URL
               value: redis://{{ include "ssoGateway.fullname" . }}-redis-svc:{{ .Values.redis.service.port }}
             - name: REDIRECT_URL
-              value: http://{{ include "ssoGateway.fullname" . }}-client-svc:{{ .Values.ssoClient.service.port }}/authn/callback
+              value: http://{{ include "ssoGateway.fullname" . }}-client-svc:{{ .Values.kilnAPI.service.port }}/authn/callback
             - name: VAULT_CONFIG_PATH
               value: {{  .Values.global.vault.containerPath | quote }}
           envFrom:
-            {{- toYaml .Values.ssoClient.envFrom | nindent 12 }}
-          {{- with .Values.ssoClient.volumeMounts }}
+            {{- toYaml .Values.kilnAPI.envFrom | nindent 12 }}
+          {{- with .Values.kilnAPI.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.ssoClient.volumes }}
+      {{- with .Values.kilnAPI.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.ssoClient.nodeSelector }}
+      {{- with .Values.kilnAPI.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.ssoClient.affinity }}
+      {{- with .Values.kilnAPI.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.ssoClient.tolerations }}
+      {{- with .Values.kilnAPI.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

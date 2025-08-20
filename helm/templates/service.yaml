@@ -5,11 +5,11 @@ metadata:
   labels:
     {{- include "ssoGateway.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.ssoClient.service.type | default "ClusterIP" }}
+  type: {{ .Values.kilnAPI.service.type | default "ClusterIP" }}
   ports:
     - name: http
       port: 80
-      targetPort: {{ .Values.ssoClient.service.port }}
+      targetPort: {{ .Values.kilnAPI.service.port }}
       protocol: TCP
   selector:
     {{- include "ssoGateway.selectorLabels" . | nindent 4 }}

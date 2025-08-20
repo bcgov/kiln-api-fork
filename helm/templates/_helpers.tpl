@@ -1,6 +1,4 @@
-{{/*
-sso-gateway/templates/_helpers.tpl
-*/}}
+
 {{- define "ssoGateway.name" -}}
 {{- default .Chart.Name .Values.global.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
