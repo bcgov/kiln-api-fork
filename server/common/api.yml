@@ -1,0 +1,222 @@
+swagger: "2.0"
+info:
+  version: 1.0.0
+  title: kiln-api
+  description: Node.js middleware to integrate Forms Foundry Kiln, ICM and communications layer.
+
+basePath: /api
+
+tags:
+  - name: Default
+    description: Health check and fallback routes
+  - name: Kiln Renderer
+    description: Endpoints for rendering forms in Kiln
+  - name: Communications Layer
+    description: Endpoints for interacting with the communications layer
+  - name: ICM User Interface
+    description: Endpoints available for ICM user interface interactions
+  - name: Kiln Interface
+    description: Endpoints for Kiln interface operations
+
+consumes:
+  - application/json
+produces:
+  - application/json
+
+paths:
+  /:
+    get:
+      tags:
+        - Default
+      description: Health check endpoint
+      responses:
+        200:
+          description: Returns API status
+
+  /preview:
+    get:
+      tags:
+        - Kiln Renderer
+        - ICM User Interface
+      description: Render an interactive preview-only form
+      responses:
+        200:
+          description: Form rendered
+
+  /view:
+    get:
+      tags:
+        - Kiln Renderer
+        - ICM User Interface
+      description: Render a view-only form
+      responses:
+        200:
+          description: Form rendered
+  /edit:
+    post:
+      tags:
+        - Kiln Renderer
+        - ICM User Interface
+      description: Render an editable and saveable form
+      responses:
+        200:
+          description: Form rendered
+
+  /saveForm:
+    post:
+      tags:
+        - Communications Layer
+        - Kiln Interface
+      description: Save form data
+      parameters:
+        - in: body
+          name: data
+          schema:
+            type: object
+      responses:
+        200:
+          description: Data saved
+
+  /generateForm:
+    post:
+      tags:
+        - Communications Layer
+        - Kiln Interface
+      description: Generate a form
+      parameters:
+        - in: body
+          name: data
+          schema:
+            type: object
+      responses:
+        200:
+          description: Form generated
+
+  /editForm:
+    post:
+      tags:
+        - Communications Layer
+        - Kiln Interface
+      description: Edit form data
+      parameters:
+        - in: body
+          name: data
+          required: true
+          schema:
+            type: object
+      responses:
+        200:
+          description: Form data edited successfully
+
+  /saveICMData:
+    post:
+      tags:
+        - Communications Layer
+        - Kiln Interface
+      description: Save data to ICM Siebel REST API
+      parameters:
+        - in: body
+          name: icmData
+          required: true
+          schema:
+            type: object
+      responses:
+        200:
+          description: ICM data saved successfully
+
+  /loadICMData:
+    post:
+      tags:
+        - Communications Layer
+        - Kiln Interface
+      description: Load data from ICM
+      parameters:
+        - in: body
+          name: icmRequest
+          required: true
+          schema:
+            type: object
+      responses:
+        200:
+          description: ICM data loaded successfully
+
+  /clearICMLockedFlag:
+    post:
+      tags:
+        - Communications Layer
+        - Kiln Interface
+      description: Clear locked flag in ICM
+      parameters:
+        - in: body
+          name: unlockRequest
+          required: true
+          schema:
+            type: object
+      responses:
+        200:
+          description: Locked flag cleared successfully
+
+  /loadSavedJson:
+    post:
+      tags:
+        - Communications Layer
+        - Kiln Interface
+      description: Load saved JSON form data
+      parameters:
+        - in: body
+          name: jsonRequest
+          required: true
+          schema:
+            type: object
+      responses:
+        200:
+          description: JSON data loaded successfully
+
+  /pdfRender:
+    post:
+      tags:
+        - Communications Layer
+        - Kiln Interface
+      description: Render a PDF from form data
+      parameters:
+        - in: body
+          name: pdfData
+          required: true
+          schema:
+            type: object
+      responses:
+        200:
+          description: PDF rendered successfully
+
+  /generatePDFFromJson:
+    post:
+      tags:
+        - Communications Layer
+        - ICM User Interface
+      description: Generate a PDF from JSON
+      parameters:
+        - in: body
+          name: jsonData
+          required: true
+          schema:
+            type: object
+      responses:
+        200:
+          description: PDF generated successfully
+
+  /generateNewTemplate:
+    post:
+      tags:
+        - Communications Layer
+        - ICM User Interface
+      description: Generate a new form template
+      parameters:
+        - in: body
+          name: templateData
+          required: true
+          schema:
+            type: object
+      responses:
+        200:
+          description: Template generated successfully
+
