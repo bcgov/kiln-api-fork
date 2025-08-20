@@ -73,6 +73,7 @@ kilnAPI:
   session:
     # Secret name for session secret
     secretName: "kiln-api-secrets"
+    secretKey: "session_secret"
 
   service:
     type: ClusterIP

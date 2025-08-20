@@ -127,6 +127,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kilnAPI.session.secretName }}
+                  key: {{ .Values.kilnAPI.session.secretKey }}
           envFrom:
             {{- toYaml .Values.kilnAPI.envFrom | nindent 12 }}
           {{- with .Values.kilnAPI.volumeMounts }}
