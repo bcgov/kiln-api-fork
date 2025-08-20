@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ssoGateway.fullname" . }}-client
+  name: {{ include "kilnAPI.fullname" . }}-client
   labels:
-    {{- include "ssoGateway.labels" . | nindent 4 }}
+    {{- include "kilnAPI.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.kilnAPI.autoscaling.enabled }}
   replicas: {{ .Values.kilnAPI.replicaCount }}
@@ -11,7 +11,7 @@ spec:
   revisionHistoryLimit: 1
   selector:
     matchLabels:
-      {{- include "ssoGateway.selectorLabels" . | nindent 6 }}
+      {{- include "kilnAPI.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       # annotations:
@@ -45,7 +45,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "ssoGateway.labels" . | nindent 8 }}
+        {{- include "kilnAPI.labels" . | nindent 8 }}
         {{- with .Values.kilnAPI.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -116,13 +116,17 @@ spec:
             - name: SSO_CLIENT_PORT
               value: {{  .Values.kilnAPI.service.port | quote }}
             - name: NGINX_PROXY_URL
-              value: http://{{ include "ssoGateway.fullname" . }}-nginx-svc
+              value: http://{{ include "kilnAPI.fullname" . }}-nginx-svc
             - name: REDIS_STORE_URL
-              value: redis://{{ include "ssoGateway.fullname" . }}-redis-svc:{{ .Values.redis.service.port }}
+              value: redis://{{ include "kilnAPI.fullname" . }}-redis-svc:{{ .Values.redis.service.port }}
             - name: REDIRECT_URL
-              value: http://{{ include "ssoGateway.fullname" . }}-client-svc:{{ .Values.kilnAPI.service.port }}/authn/callback
+              value: http://{{ include "kilnAPI.fullname" . }}-client-svc:{{ .Values.kilnAPI.service.port }}/authn/callback
             - name: VAULT_CONFIG_PATH
               value: {{  .Values.global.vault.containerPath | quote }}
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kilnAPI.session.secretName }}
           envFrom:
             {{- toYaml .Values.kilnAPI.envFrom | nindent 12 }}
           {{- with .Values.kilnAPI.volumeMounts }}

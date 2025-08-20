@@ -58,8 +58,21 @@ kilnAPI:
     capabilities:
       drop:
         - ALL
+  env:
+    - name: APP_ID
+      value: "kiln-api-test"
+    - name: PORT
+      value: "3000"
+    - name: LOG_LEVEL
+      value: "debug"
+    - name: REQUEST_LIMIT
+      value: "100kb"
+    - name: SWAGGER_API_SPEC
+      value: "/api/spec"
 
-  env: {}
+  session:
+    # Secret name for session secret
+    secretName: "kiln-api-secrets"
 
   service:
     type: ClusterIP
