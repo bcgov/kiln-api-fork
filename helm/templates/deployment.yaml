@@ -90,7 +90,7 @@ spec:
           {{- if .Values.kilnAPI.probes.liveness.enabled }}
           livenessProbe:
             httpGet:
-              path: /api
+              path: /api/
               port: http
             initialDelaySeconds: {{ .Values.kilnAPI.probes.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.kilnAPI.probes.liveness.periodSeconds }}
@@ -100,7 +100,7 @@ spec:
           {{- if .Values.kilnAPI.probes.readiness.enabled }}
           readinessProbe:
             httpGet:
-              path: /api
+              path: /api/
               port: http
             initialDelaySeconds: {{ .Values.kilnAPI.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.kilnAPI.probes.readiness.periodSeconds }}
