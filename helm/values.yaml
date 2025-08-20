@@ -34,7 +34,7 @@ kilnAPI:
   replicaCount: 1
 
   image:
-    repository: "ghcr.io/bcgov/kiln-api-client"
+    repository: "ghcr.io/bcgov/kiln-api"
     tag: "latest"
     pullPolicy: IfNotPresent
 
