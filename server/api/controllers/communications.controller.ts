@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import ICMService from '../services/icm.service';
 
 export class CommunicationsController {
   saveData(req: Request, res: Response): void {
@@ -13,8 +14,26 @@ export class CommunicationsController {
     res.json({ endpoint: 'edit', payload: req.body });
   }
 
-  saveICMData(req: Request, res: Response): void {
-    res.json({ endpoint: 'saveICMData', payload: req.body });
+  async saveICMData(req: Request, res: Response): Promise<void> {
+    const { attachmentId, OfficeName, username, savedForm } = req.body;
+
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : authHeader;
+
+    // TODO: Implement authentication/authorization when available
+
+    const result = await ICMService.saveICMData(
+      { attachmentId, OfficeName, username, savedForm },
+      token
+    );
+
+    if (result.success) {
+      res.status(200).json({ message: 'success' });
+    } else {
+      res.status(result.status || 500).json({ error: result.error });
+    }
   }
 
   loadICMData(req: Request, res: Response): void {
