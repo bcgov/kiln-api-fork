@@ -60,7 +60,6 @@ export class ICMService {
         L.warn('No authentication provided for ICM data save');
       }
 
-      // Use the ICMClient saveICMData method instead of direct fetch
       const response = await this.icmClient.saveICMData(payload);
 
       if (response.ok) {

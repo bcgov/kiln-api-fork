@@ -38,7 +38,6 @@ export class ICMClient {
     } catch (error) {
       L.error('ICMClient saveICMData request failed:', error);
 
-      // Handle axios-specific errors
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as any;
         const status = axiosError.response?.status || 500;
