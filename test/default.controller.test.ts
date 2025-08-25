@@ -6,7 +6,7 @@ import Server from '../server';
 describe('Default Controller', () => {
   it('should respond to health check', () =>
     request(Server)
-      .get('/')
+      .get('/api/')
       .expect('Content-Type', /json/)
       .expect(200)
       .then(res => {
@@ -15,7 +15,7 @@ describe('Default Controller', () => {
 
   it('should handle create', () =>
     request(Server)
-      .post('/')
+      .post('/api/')
       .send({ name: 'test' })
       .expect('Content-Type', /json/)
       .expect(201)
@@ -26,7 +26,7 @@ describe('Default Controller', () => {
 
   it('should handle byId', () =>
     request(Server)
-      .get('/123')
+      .get('/api/123')
       .expect('Content-Type', /json/)
       .expect(200)
       .then(res => {

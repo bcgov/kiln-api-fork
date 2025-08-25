@@ -3,15 +3,15 @@ import ICMService from '../services/icm.service';
 
 export class CommunicationsController {
   saveData(req: Request, res: Response): void {
-    res.json({ endpoint: 'saveData', payload: req.body });
+    res.json({ endpoint: 'saveForm', payload: req.body });
   }
 
   generateForm(req: Request, res: Response): void {
-    res.json({ endpoint: 'generate', payload: req.body });
+    res.json({ endpoint: 'generateForm', payload: req.body });
   }
 
   editFormData(req: Request, res: Response): void {
-    res.json({ endpoint: 'edit', payload: req.body });
+    res.json({ endpoint: 'editForm', payload: req.body });
   }
 
   async saveICMData(req: Request, res: Response): Promise<void> {
