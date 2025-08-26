@@ -162,7 +162,7 @@ export class ICMService {
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred';
+        error instanceof Error ? error.message : (typeof error === 'string' ? error : 'Unknown error occurred');
       L.error('Error loading ICM data:', error);
       return {
         success: false,
