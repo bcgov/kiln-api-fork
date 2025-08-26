@@ -137,12 +137,10 @@ export class ICMService {
         };
       }
 
-      if (originalServer) {
-        // Note: originalServer handling might need to be passed as header to the client
-        L.info(`Loading ICM data from original server: ${originalServer}`);
-      }
-
-      const response = await this.icmClient.loadICMData(payload);
+      const response = await this.icmClient.loadICMData(
+        payload,
+        originalServer
+      );
 
       if (response.ok) {
         const result = await response.json();
