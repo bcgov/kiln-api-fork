@@ -9,7 +9,7 @@ describe('Kiln Controller', () => {
       .get('/api/view')
       .expect('Content-Type', /json/)
       .expect(200)
-      .then(res => {
+      .then((res) => {
         expect(res.body).to.have.property('endpoint', 'view');
         expect(res.body.message).to.include('view-only');
       }));
@@ -19,7 +19,7 @@ describe('Kiln Controller', () => {
       .get('/api/edit')
       .expect('Content-Type', /json/)
       .expect(200)
-      .then(res => {
+      .then((res) => {
         expect(res.body).to.have.property('endpoint', 'edit');
         expect(res.body.message).to.include('editable');
       }));

@@ -34,10 +34,6 @@ describe('ICMClient', () => {
       }
     });
 
-    it('should have saveICMData method', () => {
-      expect(icmClient.saveICMData).to.be.a('function');
-    });
-
     it('should make successful API call and return proper response', async () => {
       // Arrange
       process.env.COMM_API_SAVEDATA_ICM_ENDPOINT_URL =
