@@ -9,6 +9,30 @@ interface ICMApiResponse {
 }
 
 export class ICMClient {
+  private handleError(error: any, operationName: string): ICMApiResponse {
+    L.error(`ICMClient ${operationName} request failed:`, error);
+
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as any;
+      const status = axiosError.response?.status || 500;
+      return {
+        ok: false,
+        status,
+        json: async () => axiosError.response?.data || {},
+      };
+    }
+
+    throw error;
+  }
+
+  private createSuccessResponse(response: any): ICMApiResponse {
+    return {
+      ok: response.status >= 200 && response.status < 300,
+      status: response.status,
+      json: async () => response.data,
+    };
+  }
+
   async saveICMData(payload: any): Promise<ICMApiResponse> {
     try {
       const url = process.env.COMM_API_SAVEDATA_ICM_ENDPOINT_URL;
@@ -32,25 +56,9 @@ export class ICMClient {
         timeout,
       });
 
-      return {
-        ok: response.status >= 200 && response.status < 300,
-        status: response.status,
-        json: async () => response.data,
-      };
+      return this.createSuccessResponse(response);
     } catch (error) {
-      L.error('ICMClient saveICMData request failed:', error);
-
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as any;
-        const status = axiosError.response?.status || 500;
-        return {
-          ok: false,
-          status,
-          json: async () => axiosError.response?.data || {},
-        };
-      }
-
-      throw error;
+      return this.handleError(error, 'saveICMData');
     }
   }
 
@@ -84,25 +92,9 @@ export class ICMClient {
         timeout,
       });
 
-      return {
-        ok: response.status >= 200 && response.status < 300,
-        status: response.status,
-        json: async () => response.data,
-      };
+      return this.createSuccessResponse(response);
     } catch (error) {
-      L.error('ICMClient loadICMData request failed:', error);
-
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as any;
-        const status = axiosError.response?.status || 500;
-        return {
-          ok: false,
-          status,
-          json: async () => axiosError.response?.data || {},
-        };
-      }
-
-      throw error;
+      return this.handleError(error, 'loadICMData');
     }
   }
 }
