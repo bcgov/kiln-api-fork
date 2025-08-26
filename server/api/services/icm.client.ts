@@ -9,10 +9,7 @@ interface ICMApiResponse {
 }
 
 export class ICMClient {
-  async saveICMData(
-    payload: any,
-    originalServer?: string
-  ): Promise<ICMApiResponse> {
+  async saveICMData(payload: any): Promise<ICMApiResponse> {
     try {
       const url = process.env.COMM_API_SAVEDATA_ICM_ENDPOINT_URL;
 
@@ -29,10 +26,6 @@ export class ICMClient {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
-
-      if (originalServer) {
-        headers['X-Original-Server'] = originalServer;
-      }
 
       const response = await axios.post(url, payload, {
         headers,
@@ -61,7 +54,10 @@ export class ICMClient {
     }
   }
 
-  async loadICMData(payload: any): Promise<ICMApiResponse> {
+  async loadICMData(
+    payload: any,
+    originalServer?: string
+  ): Promise<ICMApiResponse> {
     try {
       const url = process.env.COMM_API_LOADDATA_ICM_ENDPOINT_URL;
 
@@ -75,10 +71,16 @@ export class ICMClient {
         ? parseInt(process.env.COMM_API_TIMEOUT, 10)
         : 30000;
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (originalServer) {
+        headers['X-Original-Server'] = originalServer;
+      }
+
       const response = await axios.post(url, payload, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         timeout,
       });
 
