@@ -7,9 +7,11 @@ import ICMService from '../server/api/services/icm.service';
 
 describe('Communications Controller', () => {
   let loadICMDataStub: sinon.SinonStub;
+  let unlockICMDataStub: sinon.SinonStub;
 
   beforeEach(() => {
     loadICMDataStub = sinon.stub(ICMService, 'loadICMData');
+    unlockICMDataStub = sinon.stub(ICMService, 'unlockICMData');
   });
 
   afterEach(() => {
@@ -160,6 +162,148 @@ describe('Communications Controller', () => {
         .expect(500);
 
       expect(response.body).to.deep.equal({ error: 'Internal server error' });
+    });
+  });
+
+  describe('clearICMLockedFlag endpoint', () => {
+    it('should successfully clear ICM locked flag with username', async () => {
+      const testData = {
+        username: 'testuser',
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      unlockICMDataStub.resolves({
+        success: true,
+        data: { unlocked: true, formId: 'form-123', status: 'unlocked' },
+      });
+
+      const response = await request(Server)
+        .post('/api/clearICMLockedFlag')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).to.deep.equal({
+        unlocked: true,
+        formId: 'form-123',
+        status: 'unlocked',
+      });
+
+      expect(unlockICMDataStub.calledOnce).to.be.true;
+      const [data, token] = unlockICMDataStub.getCall(0).args;
+      expect(data).to.deep.equal({
+        formId: 'form-123',
+        lockId: 'lock-456',
+        username: 'testuser',
+      });
+      expect(token).to.be.undefined;
+    });
+
+    it('should successfully clear ICM locked flag with token in Authorization header', async () => {
+      const testData = {
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      unlockICMDataStub.resolves({
+        success: true,
+        data: { unlocked: true, formId: 'form-123' },
+      });
+
+      const response = await request(Server)
+        .post('/api/clearICMLockedFlag')
+        .set('Authorization', 'Bearer test-token-456')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).to.deep.equal({
+        unlocked: true,
+        formId: 'form-123',
+      });
+
+      const [data, token] = unlockICMDataStub.getCall(0).args;
+      expect(data).to.deep.equal({
+        formId: 'form-123',
+        lockId: 'lock-456',
+        username: undefined,
+      });
+      expect(token).to.equal('test-token-456');
+    });
+
+    it('should successfully clear ICM locked flag with token in request body', async () => {
+      const testData = {
+        token: 'body-token-789',
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      unlockICMDataStub.resolves({
+        success: true,
+        data: { unlocked: true },
+      });
+
+      const response = await request(Server)
+        .post('/api/clearICMLockedFlag')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).to.deep.equal({ unlocked: true });
+
+      const [data, token] = unlockICMDataStub.getCall(0).args;
+      expect(data).to.deep.equal({
+        formId: 'form-123',
+        lockId: 'lock-456',
+        username: undefined,
+      });
+      expect(token).to.equal('body-token-789');
+    });
+
+    it('should handle ICM service error responses', async () => {
+      const testData = {
+        username: 'testuser',
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      unlockICMDataStub.resolves({
+        success: false,
+        error: 'Insufficient permissions',
+        status: 403,
+      });
+
+      const response = await request(Server)
+        .post('/api/clearICMLockedFlag')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(403);
+
+      expect(response.body).to.deep.equal({
+        error: 'Insufficient permissions',
+      });
+    });
+
+    it('should handle ICM service error with default status 500', async () => {
+      const testData = {
+        username: 'testuser',
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      unlockICMDataStub.resolves({
+        success: false,
+        error: 'Internal unlock error',
+      });
+
+      const response = await request(Server)
+        .post('/api/clearICMLockedFlag')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(500);
+
+      expect(response.body).to.deep.equal({ error: 'Internal unlock error' });
     });
   });
 });
