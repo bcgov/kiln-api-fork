@@ -63,20 +63,20 @@ export class ICMService {
 
   private handleError(
     error: unknown,
-    operation: string
+    errorMessage: string
   ): SaveICMDataResult | ICMDataResult {
-    const errorMessage =
+    const errorDetail =
       error instanceof Error
         ? error.message
         : typeof error === 'string'
         ? error
         : 'Unknown error occurred';
 
-    L.error(`Error ${operation} ICM data:`, error);
+    L.error(errorMessage, error);
 
     return {
       success: false,
-      error: `Failed to ${operation} ICM data: ${errorMessage}`,
+      error: `${errorMessage}: ${errorDetail}`,
       status: 500,
     };
   }
@@ -132,7 +132,7 @@ export class ICMService {
         };
       }
     } catch (error) {
-      return this.handleError(error, 'saving');
+      return this.handleError(error, 'Failed to save ICM data');
     }
   }
 
@@ -185,7 +185,7 @@ export class ICMService {
         };
       }
     } catch (error) {
-      return this.handleError(error, 'loading');
+      return this.handleError(error, 'Failed to load ICM data');
     }
   }
 
@@ -235,7 +235,7 @@ export class ICMService {
         };
       }
     } catch (error) {
-      return this.handleError(error, 'unlocking');
+      return this.handleError(error, 'Failed to unlock ICM data');
     }
   }
 }
