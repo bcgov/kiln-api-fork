@@ -36,6 +36,17 @@ interface LoadICMDataRequest {
   [key: string]: any;
 }
 
+interface UnlockICMDataPayload {
+  token?: string;
+  username?: string;
+  [key: string]: any;
+}
+
+interface UnlockICMDataRequest {
+  username?: string;
+  [key: string]: any;
+}
+
 interface ICMDataResult {
   success: boolean;
   data?: any;
@@ -48,6 +59,26 @@ export class ICMService {
 
   constructor() {
     this.icmClient = new ICMClient();
+  }
+
+  private handleError(
+    error: unknown,
+    errorMessage: string
+  ): SaveICMDataResult | ICMDataResult {
+    const errorDetail =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+        ? error
+        : 'Unknown error occurred';
+
+    L.error(errorMessage, error);
+
+    return {
+      success: false,
+      error: `${errorMessage}: ${errorDetail}`,
+      status: 500,
+    };
   }
 
   async saveICMData(
@@ -101,14 +132,7 @@ export class ICMService {
         };
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred';
-      L.error('Error saving ICM data:', error);
-      return {
-        success: false,
-        error: `Failed to save ICM data: ${errorMessage}`,
-        status: 500,
-      };
+      return this.handleError(error, 'Failed to save ICM data');
     }
   }
 
@@ -161,14 +185,57 @@ export class ICMService {
         };
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : (typeof error === 'string' ? error : 'Unknown error occurred');
-      L.error('Error loading ICM data:', error);
-      return {
-        success: false,
-        error: `Failed to load ICM data: ${errorMessage}`,
-        status: 500,
+      return this.handleError(error, 'Failed to load ICM data');
+    }
+  }
+
+  async unlockICMData(
+    data: UnlockICMDataRequest,
+    token?: string
+  ): Promise<ICMDataResult> {
+    try {
+      const { username, ...params } = data;
+
+      const payload: UnlockICMDataPayload = {
+        ...params,
       };
+
+      if (token) {
+        payload.token = token;
+      } else if (username?.trim()) {
+        payload.username = username;
+      } else {
+        L.warn('No authentication provided for ICM unlock operation');
+        return {
+          success: false,
+          error:
+            'Authentication required: either token or username must be provided',
+          status: 401,
+        };
+      }
+
+      const response = await this.icmClient.unlockICMData(payload);
+
+      if (response.ok) {
+        const result = await response.json();
+        L.info('ICM Data unlocked successfully');
+        return {
+          success: true,
+          data: result,
+        };
+      } else {
+        const errorData = (await response.json().catch(() => ({}))) as any;
+        const errorMessage =
+          errorData?.error || 'Error unlocking ICM form. Please try again.';
+        L.error('ICMClient API Error:', errorMessage);
+        return {
+          success: false,
+          error: errorMessage,
+          status: response.status,
+        };
+      }
+    } catch (error) {
+      return this.handleError(error, 'Failed to unlock ICM data');
     }
   }
 }

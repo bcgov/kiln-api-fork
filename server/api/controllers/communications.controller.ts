@@ -60,8 +60,26 @@ export class CommunicationsController {
     }
   }
 
-  clearICMLockedFlag(req: Request, res: Response): void {
-    res.json({ endpoint: 'clearICMLockedFlag', payload: req.body });
+  async clearICMLockedFlag(req: Request, res: Response): Promise<void> {
+    const { token, username, ...params } = req.body;
+
+    const authHeader = req.headers.authorization;
+    const authToken =
+      token ||
+      (authHeader?.startsWith('Bearer ')
+        ? authHeader.substring(7)
+        : authHeader);
+
+    const result = await ICMService.unlockICMData(
+      { ...params, username },
+      authToken
+    );
+
+    if (result.success) {
+      res.status(200).json(result.data);
+    } else {
+      res.status(result.status || 500).json({ error: result.error });
+    }
   }
 
   loadSavedJson(req: Request, res: Response): void {

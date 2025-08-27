@@ -99,4 +99,88 @@ describe('ICMClient', () => {
       expect(jsonData).to.deep.equal(mockErrorResponse);
     });
   });
+
+  describe('unlockICMData', () => {
+    it('should throw error when COMM_API_UNLOCK_ICM_ENDPOINT_URL is not set', async () => {
+      delete process.env.COMM_API_UNLOCK_ICM_ENDPOINT_URL;
+
+      try {
+        await icmClient.unlockICMData({ test: 'data' });
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error.message).to.equal(
+          'COMM_API_UNLOCK_ICM_ENDPOINT_URL environment variable is required'
+        );
+      }
+    });
+
+    it('should make successful API call and return proper response', async () => {
+      // Arrange
+      process.env.COMM_API_UNLOCK_ICM_ENDPOINT_URL =
+        'https://api.example.com/icm/unlock';
+      process.env.COMM_API_TIMEOUT = '5000';
+
+      const mockPayload = { formId: 'form-123', userId: 'user-456' };
+      const mockResponseData = { success: true, unlocked: true };
+
+      axiosPostStub.resolves({
+        status: 200,
+        data: mockResponseData,
+      });
+
+      // Act
+      const result = await icmClient.unlockICMData(mockPayload);
+
+      // Assert
+      expect(result.ok).to.be.true;
+      expect(result.status).to.equal(200);
+
+      const jsonData = await result.json();
+      expect(jsonData).to.deep.equal(mockResponseData);
+
+      // Verify axios was called with correct parameters
+      expect(axiosPostStub.calledOnce).to.be.true;
+      expect(
+        axiosPostStub.calledWith(
+          'https://api.example.com/icm/unlock',
+          mockPayload,
+          {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 5000,
+          }
+        )
+      ).to.be.true;
+    });
+
+    it('should handle axios error responses properly', async () => {
+      // Arrange
+      process.env.COMM_API_UNLOCK_ICM_ENDPOINT_URL =
+        'https://api.example.com/icm/unlock';
+
+      const mockPayload = { formId: 'form-123' };
+      const mockErrorResponse = {
+        error: 'Forbidden',
+        message: 'Insufficient permissions to unlock',
+      };
+
+      const axiosError = {
+        response: {
+          status: 403,
+          data: mockErrorResponse,
+        },
+      };
+
+      axiosPostStub.rejects(axiosError);
+
+      // Act
+      const result = await icmClient.unlockICMData(mockPayload);
+
+      // Assert
+      expect(result.ok).to.be.false;
+      expect(result.status).to.equal(403);
+
+      const jsonData = await result.json();
+      expect(jsonData).to.deep.equal(mockErrorResponse);
+    });
+  });
 });

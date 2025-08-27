@@ -215,4 +215,178 @@ describe('ICMService', () => {
       expect(result.status).to.equal(500);
     });
   });
+
+  describe('unlockICMData', () => {
+    it('should successfully unlock ICM data with token', async () => {
+      const testData = {
+        username: 'testuser',
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: sinon
+          .stub()
+          .resolves({ unlocked: true, formId: 'form-123', status: 'success' }),
+      };
+
+      icmClientStub.unlockICMData.resolves(mockResponse as any);
+
+      const result = await icmService.unlockICMData(testData, 'test-token');
+
+      expect(result.success).to.be.true;
+      expect(result.data).to.deep.equal({
+        unlocked: true,
+        formId: 'form-123',
+        status: 'success',
+      });
+      expect(icmClientStub.unlockICMData.calledOnce).to.be.true;
+
+      const calledPayload = icmClientStub.unlockICMData.getCall(0).args[0];
+      expect(calledPayload).to.deep.equal({
+        formId: 'form-123',
+        lockId: 'lock-456',
+        token: 'test-token',
+      });
+    });
+
+    it('should successfully unlock ICM data with username when no token provided', async () => {
+      const testData = {
+        username: 'testuser',
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: sinon.stub().resolves({ unlocked: true, formId: 'form-123' }),
+      };
+
+      icmClientStub.unlockICMData.resolves(mockResponse as any);
+
+      const result = await icmService.unlockICMData(testData);
+
+      expect(result.success).to.be.true;
+      expect(icmClientStub.unlockICMData.calledOnce).to.be.true;
+
+      const calledPayload = icmClientStub.unlockICMData.getCall(0).args[0];
+      expect(calledPayload).to.deep.equal({
+        formId: 'form-123',
+        lockId: 'lock-456',
+        username: 'testuser',
+      });
+    });
+
+    it('should return error when neither token nor username is provided', async () => {
+      const testData = {
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      const result = await icmService.unlockICMData(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal(
+        'Authentication required: either token or username must be provided'
+      );
+      expect(result.status).to.equal(401);
+      expect(icmClientStub.unlockICMData.called).to.be.false;
+    });
+
+    it('should return error when username is empty string', async () => {
+      const testData = {
+        username: '   ',
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      const result = await icmService.unlockICMData(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal(
+        'Authentication required: either token or username must be provided'
+      );
+      expect(result.status).to.equal(401);
+    });
+
+    it('should handle ICM client API error responses', async () => {
+      const testData = {
+        username: 'testuser',
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      const mockResponse = {
+        ok: false,
+        status: 403,
+        json: sinon.stub().resolves({ error: 'Insufficient permissions' }),
+      };
+
+      icmClientStub.unlockICMData.resolves(mockResponse as any);
+
+      const result = await icmService.unlockICMData(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal('Insufficient permissions');
+      expect(result.status).to.equal(403);
+    });
+
+    it('should handle ICM client API error responses with default error message', async () => {
+      const testData = {
+        username: 'testuser',
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      const mockResponse = {
+        ok: false,
+        status: 500,
+        json: sinon.stub().resolves({}),
+      };
+
+      icmClientStub.unlockICMData.resolves(mockResponse as any);
+
+      const result = await icmService.unlockICMData(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal('Error unlocking ICM form. Please try again.');
+      expect(result.status).to.equal(500);
+    });
+
+    it('should handle ICM client exceptions', async () => {
+      const testData = {
+        username: 'testuser',
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      const error = new Error('Network timeout');
+      icmClientStub.unlockICMData.rejects(error);
+
+      const result = await icmService.unlockICMData(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal('Failed to unlock ICM data: Network timeout');
+      expect(result.status).to.equal(500);
+    });
+
+    it('should handle unknown errors', async () => {
+      const testData = {
+        username: 'testuser',
+        formId: 'form-123',
+        lockId: 'lock-456',
+      };
+
+      icmClientStub.unlockICMData.rejects(new Error('Connection failed'));
+
+      const result = await icmService.unlockICMData(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal(
+        'Failed to unlock ICM data: Connection failed'
+      );
+      expect(result.status).to.equal(500);
+    });
+  });
 });
