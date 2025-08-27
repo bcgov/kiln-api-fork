@@ -61,6 +61,26 @@ export class ICMService {
     this.icmClient = new ICMClient();
   }
 
+  private handleError(
+    error: unknown,
+    operation: string
+  ): SaveICMDataResult | ICMDataResult {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+        ? error
+        : 'Unknown error occurred';
+
+    L.error(`Error ${operation} ICM data:`, error);
+
+    return {
+      success: false,
+      error: `Failed to ${operation} ICM data: ${errorMessage}`,
+      status: 500,
+    };
+  }
+
   async saveICMData(
     data: SaveICMDataRequest,
     token?: string
@@ -112,14 +132,7 @@ export class ICMService {
         };
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred';
-      L.error('Error saving ICM data:', error);
-      return {
-        success: false,
-        error: `Failed to save ICM data: ${errorMessage}`,
-        status: 500,
-      };
+      return this.handleError(error, 'saving');
     }
   }
 
@@ -172,18 +185,7 @@ export class ICMService {
         };
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'string'
-          ? error
-          : 'Unknown error occurred';
-      L.error('Error loading ICM data:', error);
-      return {
-        success: false,
-        error: `Failed to load ICM data: ${errorMessage}`,
-        status: 500,
-      };
+      return this.handleError(error, 'loading');
     }
   }
 
@@ -233,14 +235,7 @@ export class ICMService {
         };
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred';
-      L.error('Error unlocking ICM data:', error);
-      return {
-        success: false,
-        error: `Failed to unlock ICM data: ${errorMessage}`,
-        status: 500,
-      };
+      return this.handleError(error, 'unlocking');
     }
   }
 }
