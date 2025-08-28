@@ -47,6 +47,14 @@ interface UnlockICMDataRequest {
   [key: string]: any;
 }
 
+interface LoadSavedJsonPayload {
+  [key: string]: any;
+}
+
+interface LoadSavedJsonRequest {
+  [key: string]: any;
+}
+
 interface ICMDataResult {
   success: boolean;
   data?: any;
@@ -236,6 +244,37 @@ export class ICMService {
       }
     } catch (error) {
       return this.handleError(error, 'Failed to unlock ICM data');
+    }
+  }
+
+  async loadSavedJson(data: LoadSavedJsonRequest): Promise<ICMDataResult> {
+    try {
+      const payload: LoadSavedJsonPayload = {
+        ...data,
+      };
+
+      const response = await this.icmClient.loadSavedJson(payload);
+
+      if (response.ok) {
+        const result = await response.json();
+        L.info('Saved JSON loaded successfully');
+        return {
+          success: true,
+          data: result,
+        };
+      } else {
+        const errorData = (await response.json().catch(() => ({}))) as any;
+        const errorMessage =
+          errorData?.error || 'Error loading saved JSON. Please try again.';
+        L.error('ICMClient API Error:', errorMessage);
+        return {
+          success: false,
+          error: errorMessage,
+          status: response.status,
+        };
+      }
+    } catch (error) {
+      return this.handleError(error, 'Failed to load saved JSON');
     }
   }
 }
