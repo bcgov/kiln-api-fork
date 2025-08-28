@@ -124,4 +124,31 @@ export class ICMClient {
       return this.handleError(error, 'unlockICMData');
     }
   }
+
+  async loadSavedJson(payload: any): Promise<ICMApiResponse> {
+    try {
+      const url = process.env.COMM_API_LOADSAVEDJSON_ENDPOINT_URL;
+
+      if (!url) {
+        throw new Error(
+          'COMM_API_LOADSAVEDJSON_ENDPOINT_URL environment variable is required'
+        );
+      }
+
+      const timeout = process.env.COMM_API_TIMEOUT
+        ? parseInt(process.env.COMM_API_TIMEOUT, 10)
+        : 30000;
+
+      const response = await axios.post(url, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout,
+      });
+
+      return this.createSuccessResponse(response);
+    } catch (error) {
+      return this.handleError(error, 'loadSavedJson');
+    }
+  }
 }

@@ -8,10 +8,12 @@ import ICMService from '../server/api/services/icm.service';
 describe('Communications Controller', () => {
   let loadICMDataStub: sinon.SinonStub;
   let unlockICMDataStub: sinon.SinonStub;
+  let loadSavedJsonStub: sinon.SinonStub;
 
   beforeEach(() => {
     loadICMDataStub = sinon.stub(ICMService, 'loadICMData');
     unlockICMDataStub = sinon.stub(ICMService, 'unlockICMData');
+    loadSavedJsonStub = sinon.stub(ICMService, 'loadSavedJson');
   });
 
   afterEach(() => {
@@ -304,6 +306,117 @@ describe('Communications Controller', () => {
         .expect(500);
 
       expect(response.body).to.deep.equal({ error: 'Internal unlock error' });
+    });
+  });
+
+  describe('loadSavedJson endpoint', () => {
+    it('should successfully load saved JSON data', async () => {
+      const testData = {
+        formId: 'form-123',
+        version: '1.0',
+      };
+
+      loadSavedJsonStub.resolves({
+        success: true,
+        data: {
+          success: true,
+          data: {
+            savedJson: { field1: 'value1', field2: 'value2' },
+            version: '1.0',
+            formId: 'form-123',
+          },
+        },
+      });
+
+      const response = await request(Server)
+        .post('/api/loadSavedJson')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).to.deep.equal({
+        success: true,
+        data: {
+          savedJson: { field1: 'value1', field2: 'value2' },
+          version: '1.0',
+          formId: 'form-123',
+        },
+      });
+
+      expect(loadSavedJsonStub.calledOnce).to.be.true;
+      const params = loadSavedJsonStub.getCall(0).args[0];
+      expect(params).to.deep.equal({
+        formId: 'form-123',
+        version: '1.0',
+      });
+    });
+
+    it('should handle ICM service error responses', async () => {
+      const testData = {
+        formId: 'form-123',
+      };
+
+      loadSavedJsonStub.resolves({
+        success: false,
+        error: 'Saved JSON not found',
+        status: 404,
+      });
+
+      const response = await request(Server)
+        .post('/api/loadSavedJson')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(404);
+
+      expect(response.body).to.deep.equal({ error: 'Saved JSON not found' });
+    });
+
+    it('should handle ICM service error with default status 500', async () => {
+      const testData = {
+        formId: 'form-123',
+      };
+
+      loadSavedJsonStub.resolves({
+        success: false,
+        error: 'Internal server error loading saved JSON',
+      });
+
+      const response = await request(Server)
+        .post('/api/loadSavedJson')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(500);
+
+      expect(response.body).to.deep.equal({ 
+        error: 'Internal server error loading saved JSON' 
+      });
+    });
+
+    it('should pass through all request body parameters', async () => {
+      const testData = {
+        formId: 'form-456',
+        version: '2.1',
+        includeMetadata: true,
+        userId: 'user-789',
+      };
+
+      loadSavedJsonStub.resolves({
+        success: true,
+        data: { savedJson: { data: 'test' } },
+      });
+
+      await request(Server)
+        .post('/api/loadSavedJson')
+        .send(testData)
+        .expect(200);
+
+      const params = loadSavedJsonStub.getCall(0).args[0];
+      expect(params).to.deep.equal({
+        formId: 'form-456',
+        version: '2.1',
+        includeMetadata: true,
+        userId: 'user-789',
+      });
     });
   });
 });

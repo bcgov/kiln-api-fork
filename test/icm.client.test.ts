@@ -183,4 +183,90 @@ describe('ICMClient', () => {
       expect(jsonData).to.deep.equal(mockErrorResponse);
     });
   });
+
+  describe('loadSavedJson', () => {
+    it('should throw error when COMM_API_LOADSAVEDJSON_ENDPOINT_URL is not set', async () => {
+      delete process.env.COMM_API_LOADSAVEDJSON_ENDPOINT_URL;
+
+      try {
+        await icmClient.loadSavedJson({ formId: 'test-form' });
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error.message).to.equal(
+          'COMM_API_LOADSAVEDJSON_ENDPOINT_URL environment variable is required'
+        );
+      }
+    });
+
+    it('should make successful API call and return proper response', async () => {
+      // Arrange
+      process.env.COMM_API_LOADSAVEDJSON_ENDPOINT_URL =
+        'https://api.example.com/icm/loadsaved';
+      process.env.COMM_API_TIMEOUT = '5000';
+
+      const mockPayload = { formId: 'form-123', version: '1.0' };
+      const mockResponseData = { 
+        success: true, 
+        data: { 
+          savedJson: { field1: 'value1', field2: 'value2' },
+          version: '1.0'
+        } 
+      };
+
+      axiosPostStub.resolves({
+        status: 200,
+        data: mockResponseData,
+      });
+
+      // Act
+      const result = await icmClient.loadSavedJson(mockPayload);
+
+      // Assert
+      expect(result.ok).to.be.true;
+      expect(result.status).to.equal(200);
+
+      const jsonData = await result.json();
+      expect(jsonData).to.deep.equal(mockResponseData);
+
+      // Verify axios was called with correct parameters
+      expect(axiosPostStub.calledOnce).to.be.true;
+      expect(
+        axiosPostStub.calledWith('https://api.example.com/icm/loadsaved', mockPayload, {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 5000,
+        })
+      ).to.be.true;
+    });
+
+    it('should handle axios error responses properly', async () => {
+      // Arrange
+      process.env.COMM_API_LOADSAVEDJSON_ENDPOINT_URL =
+        'https://api.example.com/icm/loadsaved';
+
+      const mockPayload = { formId: 'form-123' };
+      const mockErrorResponse = {
+        error: 'Not Found',
+        message: 'Saved JSON not found for the specified form',
+      };
+
+      const axiosError = {
+        response: {
+          status: 404,
+          data: mockErrorResponse,
+        },
+      };
+
+      axiosPostStub.rejects(axiosError);
+
+      // Act
+      const result = await icmClient.loadSavedJson(mockPayload);
+
+      // Assert
+      expect(result.ok).to.be.false;
+      expect(result.status).to.equal(404);
+
+      const jsonData = await result.json();
+      expect(jsonData).to.deep.equal(mockErrorResponse);
+    });
+  });
 });

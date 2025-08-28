@@ -389,4 +389,119 @@ describe('ICMService', () => {
       expect(result.status).to.equal(500);
     });
   });
+
+  describe('loadSavedJson', () => {
+    it('should successfully load saved JSON data', async () => {
+      const testData = {
+        formId: 'form-123',
+        version: '1.0',
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: sinon.stub().resolves({
+          success: true,
+          data: {
+            savedJson: { field1: 'value1', field2: 'value2' },
+            version: '1.0',
+            formId: 'form-123',
+          },
+        }),
+      };
+
+      icmClientStub.loadSavedJson.resolves(mockResponse as any);
+
+      const result = await icmService.loadSavedJson(testData);
+
+      expect(result.success).to.be.true;
+      expect(result.data).to.deep.equal({
+        success: true,
+        data: {
+          savedJson: { field1: 'value1', field2: 'value2' },
+          version: '1.0',
+          formId: 'form-123',
+        },
+      });
+      expect(icmClientStub.loadSavedJson.calledOnce).to.be.true;
+
+      const calledPayload = icmClientStub.loadSavedJson.getCall(0).args[0];
+      expect(calledPayload).to.deep.equal({
+        formId: 'form-123',
+        version: '1.0',
+      });
+    });
+
+    it('should handle ICM client API error responses', async () => {
+      const testData = {
+        formId: 'form-123',
+      };
+
+      const mockResponse = {
+        ok: false,
+        status: 404,
+        json: sinon.stub().resolves({ error: 'Saved JSON not found' }),
+      };
+
+      icmClientStub.loadSavedJson.resolves(mockResponse as any);
+
+      const result = await icmService.loadSavedJson(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal('Saved JSON not found');
+      expect(result.status).to.equal(404);
+    });
+
+    it('should handle ICM client API error responses with default error message', async () => {
+      const testData = {
+        formId: 'form-123',
+      };
+
+      const mockResponse = {
+        ok: false,
+        status: 500,
+        json: sinon.stub().resolves({}),
+      };
+
+      icmClientStub.loadSavedJson.resolves(mockResponse as any);
+
+      const result = await icmService.loadSavedJson(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal('Error loading saved JSON. Please try again.');
+      expect(result.status).to.equal(500);
+    });
+
+    it('should handle ICM client exceptions', async () => {
+      const testData = {
+        formId: 'form-123',
+      };
+
+      const error = new Error('Network connection failed');
+      icmClientStub.loadSavedJson.rejects(error);
+
+      const result = await icmService.loadSavedJson(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal(
+        'Failed to load saved JSON: Network connection failed'
+      );
+      expect(result.status).to.equal(500);
+    });
+
+    it('should handle unknown errors', async () => {
+      const testData = {
+        formId: 'form-123',
+      };
+
+      icmClientStub.loadSavedJson.rejects(new Error('Connection timeout'));
+
+      const result = await icmService.loadSavedJson(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal(
+        'Failed to load saved JSON: Connection timeout'
+      );
+      expect(result.status).to.equal(500);
+    });
+  });
 });

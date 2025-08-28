@@ -82,8 +82,16 @@ export class CommunicationsController {
     }
   }
 
-  loadSavedJson(req: Request, res: Response): void {
-    res.json({ endpoint: 'loadSavedJson', payload: req.body });
+  async loadSavedJson(req: Request, res: Response): Promise<void> {
+    const params = req.body;
+
+    const result = await ICMService.loadSavedJson(params);
+
+    if (result.success) {
+      res.status(200).json(result.data);
+    } else {
+      res.status(result.status || 500).json({ error: result.error });
+    }
   }
 
   pdfRender(req: Request, res: Response): void {
