@@ -91,12 +91,10 @@ export class ICMService {
 
   private async handleResponse(
     response: any,
-    successMessage: string,
     defaultErrorMessage: string
   ): Promise<ICMDataResult | SaveICMDataResult> {
     if (response.ok) {
       const result = await response.json();
-      L.info(successMessage, result);
       return {
         success: true,
         data: result,
@@ -146,7 +144,6 @@ export class ICMService {
       const response = await this.icmClient.saveICMData(payload);
       return this.handleResponse(
         response,
-        'ICM Data saved successfully:',
         'Error saving form. Please try again.'
       );
     } catch (error) {
@@ -185,7 +182,6 @@ export class ICMService {
       );
       return this.handleResponse(
         response,
-        'ICM Data loaded successfully',
         'Error loading form. Please try again.'
       );
     } catch (error) {
@@ -221,7 +217,6 @@ export class ICMService {
       const response = await this.icmClient.unlockICMData(payload);
       return this.handleResponse(
         response,
-        'ICM Data unlocked successfully',
         'Error unlocking ICM form. Please try again.'
       );
     } catch (error) {
@@ -238,7 +233,6 @@ export class ICMService {
       const response = await this.icmClient.loadSavedJson(payload);
       return this.handleResponse(
         response,
-        'Saved JSON loaded successfully',
         'Error loading saved JSON. Please try again.'
       );
     } catch (error) {
