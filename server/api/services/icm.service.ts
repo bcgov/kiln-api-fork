@@ -89,6 +89,30 @@ export class ICMService {
     };
   }
 
+  private async handleResponse(
+    response: any,
+    successMessage: string,
+    defaultErrorMessage: string
+  ): Promise<ICMDataResult | SaveICMDataResult> {
+    if (response.ok) {
+      const result = await response.json();
+      L.info(successMessage, result);
+      return {
+        success: true,
+        data: result,
+      };
+    } else {
+      const errorData = (await response.json().catch(() => ({}))) as any;
+      const errorMessage = errorData?.error || defaultErrorMessage;
+      L.error('ICMClient API Error:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+        status: response.status,
+      };
+    }
+  }
+
   async saveICMData(
     data: SaveICMDataRequest,
     token?: string
@@ -120,25 +144,11 @@ export class ICMService {
       }
 
       const response = await this.icmClient.saveICMData(payload);
-
-      if (response.ok) {
-        const result = await response.json();
-        L.info('ICM Data saved successfully:', result);
-        return {
-          success: true,
-          data: result,
-        };
-      } else {
-        const errorData = (await response.json().catch(() => ({}))) as any;
-        const errorMessage =
-          errorData?.error || 'Error saving form. Please try again.';
-        L.error('ICMClient API Error:', errorMessage);
-        return {
-          success: false,
-          error: errorMessage,
-          status: response.status,
-        };
-      }
+      return this.handleResponse(
+        response,
+        'ICM Data saved successfully:',
+        'Error saving form. Please try again.'
+      );
     } catch (error) {
       return this.handleError(error, 'Failed to save ICM data');
     }
@@ -173,25 +183,11 @@ export class ICMService {
         payload,
         originalServer
       );
-
-      if (response.ok) {
-        const result = await response.json();
-        L.info('ICM Data loaded successfully');
-        return {
-          success: true,
-          data: result,
-        };
-      } else {
-        const errorData = (await response.json().catch(() => ({}))) as any;
-        const errorMessage =
-          errorData?.error || 'Error loading form. Please try again.';
-        L.error('ICMClient API Error:', errorMessage);
-        return {
-          success: false,
-          error: errorMessage,
-          status: response.status,
-        };
-      }
+      return this.handleResponse(
+        response,
+        'ICM Data loaded successfully',
+        'Error loading form. Please try again.'
+      );
     } catch (error) {
       return this.handleError(error, 'Failed to load ICM data');
     }
@@ -223,25 +219,11 @@ export class ICMService {
       }
 
       const response = await this.icmClient.unlockICMData(payload);
-
-      if (response.ok) {
-        const result = await response.json();
-        L.info('ICM Data unlocked successfully');
-        return {
-          success: true,
-          data: result,
-        };
-      } else {
-        const errorData = (await response.json().catch(() => ({}))) as any;
-        const errorMessage =
-          errorData?.error || 'Error unlocking ICM form. Please try again.';
-        L.error('ICMClient API Error:', errorMessage);
-        return {
-          success: false,
-          error: errorMessage,
-          status: response.status,
-        };
-      }
+      return this.handleResponse(
+        response,
+        'ICM Data unlocked successfully',
+        'Error unlocking ICM form. Please try again.'
+      );
     } catch (error) {
       return this.handleError(error, 'Failed to unlock ICM data');
     }
@@ -254,25 +236,11 @@ export class ICMService {
       };
 
       const response = await this.icmClient.loadSavedJson(payload);
-
-      if (response.ok) {
-        const result = await response.json();
-        L.info('Saved JSON loaded successfully');
-        return {
-          success: true,
-          data: result,
-        };
-      } else {
-        const errorData = (await response.json().catch(() => ({}))) as any;
-        const errorMessage =
-          errorData?.error || 'Error loading saved JSON. Please try again.';
-        L.error('ICMClient API Error:', errorMessage);
-        return {
-          success: false,
-          error: errorMessage,
-          status: response.status,
-        };
-      }
+      return this.handleResponse(
+        response,
+        'Saved JSON loaded successfully',
+        'Error loading saved JSON. Please try again.'
+      );
     } catch (error) {
       return this.handleError(error, 'Failed to load saved JSON');
     }
