@@ -6,8 +6,27 @@ export class CommunicationsController {
     res.json({ endpoint: 'saveForm', payload: req.body });
   }
 
-  generateForm(req: Request, res: Response): void {
-    res.json({ endpoint: 'generateForm', payload: req.body });
+  async generateForm(req: Request, res: Response): Promise<void> {
+    const originalServer = req.headers['x-original-server'] as string;
+    const { token, username, ...params } = req.body;
+
+    const authHeader = req.headers.authorization;
+    const authToken =
+      token ||
+      (authHeader?.startsWith('Bearer ')
+        ? authHeader.substring(7)
+        : authHeader);
+
+    const result = await ICMService.generateForm(
+      { ...params, username, originalServer },
+      authToken
+    );
+
+    if (result.success) {
+      res.status(200).json(result.data);
+    } else {
+      res.status(result.status || 500).json({ error: result.error });
+    }
   }
 
   editFormData(req: Request, res: Response): void {
@@ -40,7 +59,6 @@ export class CommunicationsController {
     const originalServer = req.headers['x-original-server'] as string;
     const { token, username, ...params } = req.body;
 
-    // Extract token from Authorization header if not in body
     const authHeader = req.headers.authorization;
     const authToken =
       token ||

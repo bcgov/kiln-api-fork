@@ -504,4 +504,219 @@ describe('ICMService', () => {
       expect(result.status).to.equal(500);
     });
   });
+
+  describe('generateForm', () => {
+    it('should successfully generate form with token', async () => {
+      const testData = {
+        username: 'testuser',
+        formType: 'registration',
+        templateId: 'template-123',
+        originalServer: 'https://original.example.com',
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: sinon
+          .stub()
+          .resolves({ formId: 'generated-123', success: true, status: 'created' }),
+      };
+
+      icmClientStub.generateForm.resolves(mockResponse as any);
+
+      const result = await icmService.generateForm(testData, 'test-token');
+
+      expect(result.success).to.be.true;
+      expect(result.data).to.deep.equal({
+        formId: 'generated-123',
+        success: true,
+        status: 'created',
+      });
+      expect(icmClientStub.generateForm.calledOnce).to.be.true;
+
+      const [calledPayload, originalServer] =
+        icmClientStub.generateForm.getCall(0).args;
+      expect(calledPayload).to.deep.equal({
+        formType: 'registration',
+        templateId: 'template-123',
+        token: 'test-token',
+      });
+      expect(originalServer).to.equal('https://original.example.com');
+    });
+
+    it('should successfully generate form with username when no token provided', async () => {
+      const testData = {
+        username: 'testuser',
+        formType: 'registration',
+        templateId: 'template-123',
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: sinon.stub().resolves({ formId: 'generated-456', success: true }),
+      };
+
+      icmClientStub.generateForm.resolves(mockResponse as any);
+
+      const result = await icmService.generateForm(testData);
+
+      expect(result.success).to.be.true;
+      expect(result.data).to.deep.equal({ formId: 'generated-456', success: true });
+      expect(icmClientStub.generateForm.calledOnce).to.be.true;
+
+      const [calledPayload, originalServer] =
+        icmClientStub.generateForm.getCall(0).args;
+      expect(calledPayload).to.deep.equal({
+        formType: 'registration',
+        templateId: 'template-123',
+        username: 'testuser',
+      });
+      expect(originalServer).to.be.undefined;
+    });
+
+    it('should return error when neither token nor username is provided', async () => {
+      const testData = {
+        formType: 'registration',
+        templateId: 'template-123',
+      };
+
+      const result = await icmService.generateForm(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal(
+        'Authentication required: either token or username must be provided'
+      );
+      expect(result.status).to.equal(401);
+      expect(icmClientStub.generateForm.called).to.be.false;
+    });
+
+    it('should return error when username is empty string', async () => {
+      const testData = {
+        username: '   ',
+        formType: 'registration',
+        templateId: 'template-123',
+      };
+
+      const result = await icmService.generateForm(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal(
+        'Authentication required: either token or username must be provided'
+      );
+      expect(result.status).to.equal(401);
+      expect(icmClientStub.generateForm.called).to.be.false;
+    });
+
+    it('should handle ICM client API error responses', async () => {
+      const testData = {
+        username: 'testuser',
+        formType: 'invalid-type',
+        templateId: 'template-123',
+      };
+
+      const mockResponse = {
+        ok: false,
+        status: 400,
+        json: sinon.stub().resolves({ error: 'Invalid form type provided' }),
+      };
+
+      icmClientStub.generateForm.resolves(mockResponse as any);
+
+      const result = await icmService.generateForm(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal('Invalid form type provided');
+      expect(result.status).to.equal(400);
+    });
+
+    it('should handle ICM client API error responses with default error message', async () => {
+      const testData = {
+        username: 'testuser',
+        formType: 'registration',
+        templateId: 'template-123',
+      };
+
+      const mockResponse = {
+        ok: false,
+        status: 500,
+        json: sinon.stub().resolves({}),
+      };
+
+      icmClientStub.generateForm.resolves(mockResponse as any);
+
+      const result = await icmService.generateForm(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal('Error generating form. Please try again.');
+      expect(result.status).to.equal(500);
+    });
+
+    it('should handle ICM client exceptions', async () => {
+      const testData = {
+        username: 'testuser',
+        formType: 'registration',
+        templateId: 'template-123',
+      };
+
+      const error = new Error('Network connection failed');
+      icmClientStub.generateForm.rejects(error);
+
+      const result = await icmService.generateForm(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal(
+        'Failed to generate form: Network connection failed'
+      );
+      expect(result.status).to.equal(500);
+    });
+
+    it('should handle unknown errors', async () => {
+      const testData = {
+        username: 'testuser',
+        formType: 'registration',
+        templateId: 'template-123',
+      };
+
+      icmClientStub.generateForm.rejects(new Error('Template not found'));
+
+      const result = await icmService.generateForm(testData);
+
+      expect(result.success).to.be.false;
+      expect(result.error).to.equal('Failed to generate form: Template not found');
+      expect(result.status).to.equal(500);
+    });
+
+    it('should pass through additional parameters to ICM client', async () => {
+      const testData = {
+        username: 'testuser',
+        formType: 'registration',
+        templateId: 'template-123',
+        customField1: 'value1',
+        customField2: 'value2',
+        originalServer: 'https://server.example.com',
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: sinon.stub().resolves({ formId: 'generated-789', success: true }),
+      };
+
+      icmClientStub.generateForm.resolves(mockResponse as any);
+
+      const result = await icmService.generateForm(testData);
+
+      expect(result.success).to.be.true;
+      expect(icmClientStub.generateForm.calledOnce).to.be.true;
+
+      const [calledPayload, originalServer] =
+        icmClientStub.generateForm.getCall(0).args;
+      expect(calledPayload).to.deep.equal({
+        formType: 'registration',
+        templateId: 'template-123',
+        customField1: 'value1',
+        customField2: 'value2',
+        username: 'testuser',
+      });
+      expect(originalServer).to.equal('https://server.example.com');
+    });
+  });
 });
