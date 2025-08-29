@@ -9,11 +9,13 @@ describe('Communications Controller', () => {
   let loadICMDataStub: sinon.SinonStub;
   let unlockICMDataStub: sinon.SinonStub;
   let loadSavedJsonStub: sinon.SinonStub;
+  let generateFormStub: sinon.SinonStub;
 
   beforeEach(() => {
     loadICMDataStub = sinon.stub(ICMService, 'loadICMData');
     unlockICMDataStub = sinon.stub(ICMService, 'unlockICMData');
     loadSavedJsonStub = sinon.stub(ICMService, 'loadSavedJson');
+    generateFormStub = sinon.stub(ICMService, 'generateForm');
   });
 
   afterEach(() => {
@@ -32,16 +34,36 @@ describe('Communications Controller', () => {
         expect(res.body.payload).to.have.property('test', true);
       }));
 
-  it('should respond to POST /api/generateForm', () =>
-    request(Server)
+  it('should respond to POST /api/generateForm', async () => {
+    const testData = {
+      test: true,
+      username: 'testuser',
+      formType: 'registration'
+    };
+
+    generateFormStub.resolves({
+      success: true,
+      data: { formId: 'generated-123', success: true },
+    });
+
+    const response = await request(Server)
       .post('/api/generateForm')
-      .send({ test: true })
+      .send(testData)
       .expect('Content-Type', /json/)
-      .expect(200)
-      .then((res) => {
-        expect(res.body).to.have.property('endpoint', 'generateForm');
-        expect(res.body.payload).to.have.property('test', true);
-      }));
+      .expect(200);
+
+    expect(response.body).to.deep.equal({ formId: 'generated-123', success: true });
+
+    expect(generateFormStub.calledOnce).to.be.true;
+    const [data, token] = generateFormStub.getCall(0).args;
+    expect(data).to.deep.equal({
+      test: true,
+      formType: 'registration',
+      username: 'testuser',
+      originalServer: undefined,
+    });
+    expect(token).to.be.undefined;
+  });
 
   describe('loadICMData endpoint', () => {
     it('should successfully load ICM data with username', async () => {
@@ -387,8 +409,8 @@ describe('Communications Controller', () => {
         .expect('Content-Type', /json/)
         .expect(500);
 
-      expect(response.body).to.deep.equal({ 
-        error: 'Internal server error loading saved JSON' 
+      expect(response.body).to.deep.equal({
+        error: 'Internal server error loading saved JSON',
       });
     });
 

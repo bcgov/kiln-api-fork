@@ -269,4 +269,119 @@ describe('ICMClient', () => {
       expect(jsonData).to.deep.equal(mockErrorResponse);
     });
   });
+
+  describe('generateForm', () => {
+    it('should throw error when COMM_API_GENERATE_ENDPOINT_URL is not set', async () => {
+      delete process.env.COMM_API_GENERATE_ENDPOINT_URL;
+
+      try {
+        await icmClient.generateForm({ test: 'data' });
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error.message).to.equal(
+          'COMM_API_GENERATE_ENDPOINT_URL environment variable is required'
+        );
+      }
+    });
+
+    it('should make successful API call and return proper response', async () => {
+      // Arrange
+      process.env.COMM_API_GENERATE_ENDPOINT_URL =
+        'https://api.example.com/icm/generate';
+      process.env.COMM_API_TIMEOUT = '5000';
+
+      const mockPayload = { formType: 'registration', data: { name: 'test' } };
+      const mockResponseData = { success: true, formId: 'generated-123' };
+
+      axiosPostStub.resolves({
+        status: 200,
+        data: mockResponseData,
+      });
+
+      // Act
+      const result = await icmClient.generateForm(mockPayload);
+
+      // Assert
+      expect(result.ok).to.be.true;
+      expect(result.status).to.equal(200);
+
+      const jsonData = await result.json();
+      expect(jsonData).to.deep.equal(mockResponseData);
+
+      // Verify axios was called with correct parameters
+      expect(axiosPostStub.calledOnce).to.be.true;
+      expect(
+        axiosPostStub.calledWith('https://api.example.com/icm/generate', mockPayload, {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 5000,
+        })
+      ).to.be.true;
+    });
+
+    it('should include X-Original-Server header when originalServer is provided', async () => {
+      // Arrange
+      process.env.COMM_API_GENERATE_ENDPOINT_URL =
+        'https://api.example.com/icm/generate';
+      process.env.COMM_API_TIMEOUT = '5000';
+
+      const mockPayload = { formType: 'registration' };
+      const originalServer = 'server1.example.com';
+      const mockResponseData = { success: true, formId: 'generated-456' };
+
+      axiosPostStub.resolves({
+        status: 200,
+        data: mockResponseData,
+      });
+
+      // Act
+      const result = await icmClient.generateForm(mockPayload, originalServer);
+
+      // Assert
+      expect(result.ok).to.be.true;
+      expect(result.status).to.equal(200);
+
+      // Verify axios was called with correct parameters including X-Original-Server header
+      expect(axiosPostStub.calledOnce).to.be.true;
+      expect(
+        axiosPostStub.calledWith('https://api.example.com/icm/generate', mockPayload, {
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Original-Server': originalServer
+          },
+          timeout: 5000,
+        })
+      ).to.be.true;
+    });
+
+    it('should handle axios error responses properly', async () => {
+      // Arrange
+      process.env.COMM_API_GENERATE_ENDPOINT_URL =
+        'https://api.example.com/icm/generate';
+
+      const mockPayload = { formType: 'invalid' };
+      const mockErrorResponse = {
+        error: 'Bad Request',
+        message: 'Invalid form type provided',
+      };
+
+      const axiosError = {
+        response: {
+          status: 400,
+          data: mockErrorResponse,
+        },
+      };
+
+      axiosPostStub.rejects(axiosError);
+
+      // Act
+      const result = await icmClient.generateForm(mockPayload);
+
+      // Assert
+      expect(result.ok).to.be.false;
+      expect(result.status).to.equal(400);
+
+      const jsonData = await result.json();
+      expect(jsonData).to.deep.equal(mockErrorResponse);
+    });
+  });
 });
