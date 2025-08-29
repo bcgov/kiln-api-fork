@@ -34,35 +34,236 @@ describe('Communications Controller', () => {
         expect(res.body.payload).to.have.property('test', true);
       }));
 
-  it('should respond to POST /api/generateForm', async () => {
-    const testData = {
-      test: true,
-      username: 'testuser',
-      formType: 'registration'
-    };
+  describe('generateForm endpoint', () => {
+    it('should successfully generate form with username', async () => {
+      const testData = {
+        username: 'testuser',
+        formType: 'registration',
+        templateId: 'template-123',
+      };
 
-    generateFormStub.resolves({
-      success: true,
-      data: { formId: 'generated-123', success: true },
+      generateFormStub.resolves({
+        success: true,
+        data: { formId: 'generated-123', success: true, status: 'created' },
+      });
+
+      const response = await request(Server)
+        .post('/api/generateForm')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).to.deep.equal({
+        formId: 'generated-123',
+        success: true,
+        status: 'created',
+      });
+
+      expect(generateFormStub.calledOnce).to.be.true;
+      const [data, token] = generateFormStub.getCall(0).args;
+      expect(data).to.deep.equal({
+        formType: 'registration',
+        templateId: 'template-123',
+        username: 'testuser',
+        originalServer: undefined,
+      });
+      expect(token).to.be.undefined;
     });
 
-    const response = await request(Server)
-      .post('/api/generateForm')
-      .send(testData)
-      .expect('Content-Type', /json/)
-      .expect(200);
+    it('should successfully generate form with token in Authorization header', async () => {
+      const testData = {
+        formType: 'application',
+        templateId: 'template-456',
+      };
 
-    expect(response.body).to.deep.equal({ formId: 'generated-123', success: true });
+      generateFormStub.resolves({
+        success: true,
+        data: { formId: 'generated-456', success: true },
+      });
 
-    expect(generateFormStub.calledOnce).to.be.true;
-    const [data, token] = generateFormStub.getCall(0).args;
-    expect(data).to.deep.equal({
-      test: true,
-      formType: 'registration',
-      username: 'testuser',
-      originalServer: undefined,
+      const response = await request(Server)
+        .post('/api/generateForm')
+        .set('Authorization', 'Bearer test-token-123')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).to.deep.equal({
+        formId: 'generated-456',
+        success: true,
+      });
+
+      const [data, token] = generateFormStub.getCall(0).args;
+      expect(data).to.deep.equal({
+        formType: 'application',
+        templateId: 'template-456',
+        username: undefined,
+        originalServer: undefined,
+      });
+      expect(token).to.equal('test-token-123');
     });
-    expect(token).to.be.undefined;
+
+    it('should successfully generate form with token in request body', async () => {
+      const testData = {
+        token: 'body-token-789',
+        formType: 'survey',
+        templateId: 'template-789',
+      };
+
+      generateFormStub.resolves({
+        success: true,
+        data: { formId: 'generated-789', success: true },
+      });
+
+      const response = await request(Server)
+        .post('/api/generateForm')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).to.deep.equal({
+        formId: 'generated-789',
+        success: true,
+      });
+
+      const [data, token] = generateFormStub.getCall(0).args;
+      expect(data).to.deep.equal({
+        formType: 'survey',
+        templateId: 'template-789',
+        username: undefined,
+        originalServer: undefined,
+      });
+      expect(token).to.equal('body-token-789');
+    });
+
+    it('should pass through originalServer from headers', async () => {
+      const testData = {
+        username: 'testuser',
+        formType: 'registration',
+        templateId: 'template-123',
+      };
+
+      generateFormStub.resolves({
+        success: true,
+        data: { formId: 'generated-original', success: true },
+      });
+
+      await request(Server)
+        .post('/api/generateForm')
+        .set('x-original-server', 'https://original.example.com')
+        .send(testData)
+        .expect(200);
+
+      const [data] = generateFormStub.getCall(0).args;
+      expect(data.originalServer).to.equal('https://original.example.com');
+    });
+
+    it('should handle ICM service error responses', async () => {
+      const testData = {
+        username: 'testuser',
+        formType: 'invalid-type',
+        templateId: 'template-123',
+      };
+
+      generateFormStub.resolves({
+        success: false,
+        error: 'Invalid form type provided',
+        status: 400,
+      });
+
+      const response = await request(Server)
+        .post('/api/generateForm')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).to.deep.equal({
+        error: 'Invalid form type provided',
+      });
+    });
+
+    it('should handle ICM service error with default status 500', async () => {
+      const testData = {
+        username: 'testuser',
+        formType: 'registration',
+        templateId: 'template-123',
+      };
+
+      generateFormStub.resolves({
+        success: false,
+        error: 'Internal form generation error',
+      });
+
+      const response = await request(Server)
+        .post('/api/generateForm')
+        .send(testData)
+        .expect('Content-Type', /json/)
+        .expect(500);
+
+      expect(response.body).to.deep.equal({
+        error: 'Internal form generation error',
+      });
+    });
+
+    it('should pass through all request body parameters', async () => {
+      const testData = {
+        username: 'testuser',
+        formType: 'complex',
+        templateId: 'template-complex',
+        customField1: 'value1',
+        customField2: 'value2',
+        metadata: { version: '2.0', source: 'api' },
+      };
+
+      generateFormStub.resolves({
+        success: true,
+        data: { formId: 'generated-complex', success: true },
+      });
+
+      await request(Server)
+        .post('/api/generateForm')
+        .send(testData)
+        .expect(200);
+
+      const [data] = generateFormStub.getCall(0).args;
+      expect(data).to.deep.equal({
+        formType: 'complex',
+        templateId: 'template-complex',
+        customField1: 'value1',
+        customField2: 'value2',
+        metadata: { version: '2.0', source: 'api' },
+        username: 'testuser',
+        originalServer: undefined,
+      });
+    });
+
+    it('should prioritize token from request body over Authorization header', async () => {
+      const testData = {
+        token: 'body-token-priority',
+        formType: 'priority-test',
+        templateId: 'template-priority',
+      };
+
+      generateFormStub.resolves({
+        success: true,
+        data: { formId: 'generated-priority', success: true },
+      });
+
+      await request(Server)
+        .post('/api/generateForm')
+        .set('Authorization', 'Bearer header-token-ignored')
+        .send(testData)
+        .expect(200);
+
+      const [data, token] = generateFormStub.getCall(0).args;
+      expect(token).to.equal('body-token-priority');
+      expect(data).to.deep.equal({
+        formType: 'priority-test',
+        templateId: 'template-priority',
+        username: undefined,
+        originalServer: undefined,
+      });
+    });
   });
 
   describe('loadICMData endpoint', () => {
