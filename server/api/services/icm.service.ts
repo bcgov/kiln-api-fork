@@ -55,6 +55,19 @@ interface LoadSavedJsonRequest {
   [key: string]: any;
 }
 
+interface GenerateFormPayload {
+  token?: string;
+  username?: string;
+  originalServer?: string;
+  [key: string]: any;
+}
+
+interface GenerateFormRequest {
+  username?: string;
+  originalServer?: string;
+  [key: string]: any;
+}
+
 interface ICMDataResult {
   success: boolean;
   data?: any;
@@ -237,6 +250,44 @@ export class ICMService {
       );
     } catch (error) {
       return this.handleError(error, 'Failed to load saved JSON');
+    }
+  }
+
+  async generateForm(
+    data: GenerateFormRequest,
+    token?: string
+  ): Promise<ICMDataResult> {
+    try {
+      const { username, originalServer, ...params } = data;
+
+      const payload: GenerateFormPayload = {
+        ...params,
+      };
+
+      if (token) {
+        payload.token = token;
+      } else if (username?.trim()) {
+        payload.username = username;
+      } else {
+        L.warn('No authentication provided for form generation');
+        return {
+          success: false,
+          error:
+            'Authentication required: either token or username must be provided',
+          status: 401,
+        };
+      }
+
+      const response = await this.icmClient.generateForm(
+        payload,
+        originalServer
+      );
+      return this.handleResponse(
+        response,
+        'Error generating form. Please try again.'
+      );
+    } catch (error) {
+      return this.handleError(error, 'Failed to generate form');
     }
   }
 }
